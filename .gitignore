@@ -1,6 +1,10 @@
-*.class
+.DS_Store
+tags
+*.gz
+*.iml
+*.ipr
+.idea
+**/.DS_Store
+*.iws
+target
 
-# Package Files #
-*.jar
-*.war
-*.ear
