@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mule xmlns="http://www.mulesoft.org/schema/mule/core"
+      xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xmlns:spring="http://www.springframework.org/schema/beans"
+      xmlns:http="http://www.mulesoft.org/schema/mule/http"
+      xmlns:vm="http://www.mulesoft.org/schema/mule/vm"
+      xmlns:servlet="http://www.mulesoft.org/schema/mule/servlet"
+	xmlns:restlet="http://www.mulesource.org/schema/mule/restlet/2.1"
+      xsi:schemaLocation="
+        http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+        http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+        http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+        http://www.mulesoft.org/schema/mule/servlet http://www.mulesoft.org/schema/mule/servlet/current/mule-servlet.xsd
+        http://www.mulesoft.org/schema/mule/vm http://www.mulesoft.org/schema/mule/vm/current/mule-vm.xsd
+	http://www.mulesource.org/schema/mule/restlet/2.1 http://www.mulesource.org/schema/mule/restlet/2.1/mule-restlet.xsd">
+
+
+    <description>
+    This configuration uses an HTTP endpoint to receive requests.
+    </description>
+
+   
+
+
+    <flow name="RequestInfo" doc:name="Qid-search">
+        
+            <http:inbound-endpoint exchange-pattern="request-response" host="localhost" port="8082" path="qid-simulator" doc:name="Http Endpoint"/>
+        <http:body-to-parameter-map-transformer doc:name="Body to Parameter Map"/>
+        <flow-ref name="searchresult" doc:name="Process request"/>
+        <catch-exception-strategy>
+        	<logger level="ERROR" message="#[payload]" doc:name="Log Error"/>
+        	<set-payload value="The request cannot be processed, the error is #[exception.getSummaryMessage()]"/> <!-- [1] -->
+                <set-property propertyName="http.status" value="400"/>
+        </catch-exception-strategy>
+    </flow>
+
+	<flow name="searchresult" doc:name="searchresult">
+		<component class="se.streamsource.qidsimulator.QidSearch" doc:name="Search Component"/>
+		
+	</flow>
+
+
+</mule>
