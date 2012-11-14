@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mule xmlns="http://www.mulesoft.org/schema/mule/core"
+      xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xmlns:spring="http://www.springframework.org/schema/beans"
+      xmlns:http="http://www.mulesoft.org/schema/mule/http"
+      xmlns:https="http://www.mulesoft.org/schema/mule/https"
+      xmlns:vm="http://www.mulesoft.org/schema/mule/vm"
+      xmlns:servlet="http://www.mulesoft.org/schema/mule/servlet"
+	  xmlns:restlet="http://www.mulesource.org/schema/mule/restlet/2.1"
+	  xmlns:json="http://www.mulesoft.org/schema/mule/json"
+      xsi:schemaLocation="
+        http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+        http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+        http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+        http://www.mulesoft.org/schema/mule/https http://www.mulesoft.org/schema/mule/https/current/mule-https.xsd
+        http://www.mulesoft.org/schema/mule/servlet http://www.mulesoft.org/schema/mule/servlet/current/mule-servlet.xsd
+        http://www.mulesoft.org/schema/mule/vm http://www.mulesoft.org/schema/mule/vm/current/mule-vm.xsd
+	    http://www.mulesource.org/schema/mule/restlet/2.1 http://www.mulesource.org/schema/mule/restlet/2.1/mule-restlet.xsd
+	    http://www.mulesoft.org/schema/mule/json http://www.mulesoft.org/schema/mule/json/3.3/mule-json.xsd">
+
+
+    <description>
+    This configuration uses an HTTP endpoint to receive requests.
+    </description>
+
+    
+	
+    <flow name="searchstart" doc:name="start">
+        
+            <http:inbound-endpoint exchange-pattern="request-response" host="localhost" port="8888" doc:name="Http Endpoint"/>
+    	
+        <http:body-to-parameter-map-transformer doc:name="Body to Parameter Map"/>
+        <flow-ref name="process_sf_searchrequest" doc:name="Process request"/>
+
+	<catch-exception-strategy>
+        	<logger level="ERROR" message="#[payload]" doc:name="Log Error"/>
+                <set-payload value="The request cannot be processed, the error is #[exception.getSummaryMessage()]"/> <!-- [1] -->
+                <set-property propertyName="http.status" value="400"/> <!-- [2] -->
+        </catch-exception-strategy>
+        
+    </flow>
+
+<flow name="searchstart_vm" doc:name="searchstart_vm">
+		<vm:inbound-endpoint exchange-pattern="request-response" path="searchstart" doc:name="VM Endpoint"/>
+		<flow-ref name="process_sf_searchrequest" doc:name="Process request"/>
+	</flow>
+
+    <sub-flow name="process_sf_searchrequest">
+	    <component class="se.streamsource.qidintegration.QueryStringToQidQuery" doc:name="toQidQuery"/>
+		
+		
+	    <flow-ref name="qid_invocation"/>
+	
+        </sub-flow>
+    
+    <sub-flow name="qid_invocation">
+         <http:outbound-endpoint address="http://localhost:8082/qid-simulator?contactId=#[payload]"  method="GET"   exchange-pattern="request-response" /> 
+<!--        <https:outbound-endpoint address="https://85.188.80.28:63081/persons/#[payload]"  method="GET"   exchange-pattern="request-response" /> -->
+    	    
+        
+        <object-to-string-transformer />
+        <component class="se.streamsource.channel.qidintegration.ContactParser"/>
+         <json:object-to-json-transformer sourceClass="se.streamsource.channel.transport.ContactValue" /> 
+	
+    </sub-flow>
+    
+
+</mule>
